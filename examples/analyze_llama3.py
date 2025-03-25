@@ -2,7 +2,11 @@
 import argparse
 import json
 import os
+import sys
 from typing import Dict, List, Optional
+
+# Add the parent directory to sys.path to resolve imports
+sys.path.insert(0, os.path.abspath(os.path.dirname(os.path.dirname(__file__))))
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,7 +18,7 @@ from visuallm.adapters.llama import LlamaAnalyzer
 def parse_args():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description="Analyze Llama-3 model weights and activations.")
-    parser.add_argument("--model_path", type=str, default="/data2/Llama3/llama3-8b", 
+    parser.add_argument("--model_path", type=str, default="/data2/Llama3", 
                       help="Path to the Llama-3 model")
     parser.add_argument("--output_dir", type=str, default="./outputs",
                       help="Directory to save analysis results")
@@ -22,6 +26,8 @@ def parse_args():
                       help="Comma-separated list of layer indices to analyze (e.g., '0,1,2'), or 'all' for all layers")
     parser.add_argument("--use_4bit", action="store_true",
                       help="Whether to load model in 4-bit precision")
+    parser.add_argument("--use_flash_attention", action="store_true",
+                      help="Whether to use flash attention for faster inference (requires flash_attn package)")
     parser.add_argument("--prompt", type=str, default="Once upon a time in a land far away",
                       help="Prompt for activation analysis")
     return parser.parse_args()
@@ -219,7 +225,7 @@ def main():
     analyzer = LlamaAnalyzer(
         model_path=args.model_path,
         load_in_4bit=args.use_4bit,
-        use_flash_attention=True,
+        use_flash_attention=args.use_flash_attention,
     )
     
     # Get model structure

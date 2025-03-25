@@ -1,5 +1,6 @@
 """Adapter for Llama models, including Llama-3."""
 from typing import Dict, List, Optional, Tuple, Union, Any
+import os
 
 import torch
 from torch import nn
@@ -21,7 +22,7 @@ class LlamaAnalyzer(ModelAnalyzer):
         device: Optional[Union[str, torch.device]] = None,
         load_in_8bit: bool = False,
         load_in_4bit: bool = False,
-        use_flash_attention: bool = True,
+        use_flash_attention: bool = False,  # Default to False since flash_attn may not be installed
     ):
         """Initialize a Llama analyzer.
         
@@ -30,8 +31,20 @@ class LlamaAnalyzer(ModelAnalyzer):
             device: Device to place the model on
             load_in_8bit: Whether to load the model in 8-bit precision
             load_in_4bit: Whether to load the model in 4-bit precision
-            use_flash_attention: Whether to use flash attention for faster inference
+            use_flash_attention: Whether to use flash attention for faster inference (requires flash_attn package)
         """
+        # Validate the model path
+        if not os.path.exists(model_path):
+            raise ValueError(f"Model path does not exist: {model_path}")
+            
+        # Check if the model path contains required files
+        config_path = os.path.join(model_path, "config.json")
+        if not os.path.exists(config_path):
+            raise ValueError(f"Model directory does not contain config.json: {model_path}")
+            
+        print(f"Loading model from: {model_path}")
+        print(f"Using device: {device or 'auto'}")
+        
         # Configure quantization parameters
         quantization_config = None
         if load_in_8bit or load_in_4bit:
@@ -45,18 +58,35 @@ class LlamaAnalyzer(ModelAnalyzer):
         
         # Configure attention implementation
         attn_implementation = "flash_attention_2" if use_flash_attention else "eager"
+        if use_flash_attention:
+            try:
+                import flash_attn
+                print(f"Using Flash Attention 2 for faster inference")
+            except ImportError:
+                print(f"Warning: flash_attn package not found. Falling back to eager implementation.")
+                attn_implementation = "eager"
         
-        # Load the model with accelerate
-        model = AutoModelForCausalLM.from_pretrained(
-            model_path,
-            device_map="auto" if device is None else device,
-            torch_dtype=torch.float16,
-            quantization_config=quantization_config,
-            attn_implementation=attn_implementation,
-        )
-        
-        # Initialize the tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(model_path)
+        try:
+            # Load the model with accelerate and local path
+            model = AutoModelForCausalLM.from_pretrained(
+                model_path,
+                device_map="auto" if device is None else device,
+                torch_dtype=torch.float16,
+                quantization_config=quantization_config,
+                attn_implementation=attn_implementation,
+                local_files_only=True,  # Ensure we don't try to download from Hub
+                trust_remote_code=True,  # Trust custom code if present
+            )
+            
+            # Initialize the tokenizer
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                model_path,
+                local_files_only=True,
+                trust_remote_code=True,
+            )
+        except Exception as e:
+            print(f"Error loading model: {e}")
+            raise
         
         # Initialize the base class
         super().__init__(model, device)
@@ -68,6 +98,8 @@ class LlamaAnalyzer(ModelAnalyzer):
         self.num_layers = self._get_num_layers()
         self.hidden_size = self._get_hidden_size()
         self.model_type = self._identify_model_subtype()
+        
+        print(f"Model loaded successfully: {self.model_type}, {self.num_layers} layers")
     
     def _get_num_layers(self) -> int:
         """Get the number of layers in the model.
