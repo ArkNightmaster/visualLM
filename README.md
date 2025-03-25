@@ -86,10 +86,10 @@ python examples/analyze_llama3.py --model_path /data2/Llama3/llama3-8b --use_4bi
 ## 📊 Visualization Examples
 
 ### Weight Distributions
-![Weight Distributions](./outputs/weights/weight_mean_std.png)
+![Weight Distributions](./figs/weight_mean_std.png)
 
 ### Activation Patterns
-![Activation Patterns](./outputs/activations/activations_layer_0.png)
+![Activation Patterns](./figs/activations_layer_0.png)
 
 ## 📖 Documentation
 
