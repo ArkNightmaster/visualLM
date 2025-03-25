@@ -86,13 +86,10 @@ python examples/analyze_llama3.py --model_path /data2/Llama3/llama3-8b --use_4bi
 ## 📊 Visualization Examples
 
 ### Weight Distributions
-![Weight Distributions](path/to/weight_dist.png)
+![Weight Distributions](./outputs/weights/weight_mean_std.png)
 
 ### Activation Patterns
-![Activation Patterns](path/to/activation_patterns.png)
-
-### Layer-wise Comparisons
-![Layer Comparisons](path/to/layer_comparison.png)
+![Activation Patterns](./outputs/activations/activations_layer_0.png)
 
 ## 📖 Documentation
 
@@ -126,6 +123,13 @@ visuallm/
 - SciPy, StatsModels
 - Jupyter (for notebooks)
 - Accelerate (for efficient model loading)
+
+## ✅ TODO
+
+- [ ] Add support for BERT
+- [ ] Add support for BART
+- [ ] Add support for T5
+- [ ] Add support for ViT
 
 ## 💡 Contributing
 
